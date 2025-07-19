@@ -1,0 +1,2108 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>المنصة الذهبية - لوحة تحكم المدرس</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@400;500;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Feather Icons -->
+    <script src="https://unpkg.com/feather-icons"></script>
+
+    <!-- Chart.js for Analytics -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chartjs-adapter-date-fns/dist/chartjs-adapter-date-fns.bundle.min.js"></script>
+
+
+    <style>
+        body { 
+            font-family: 'Tajawal', sans-serif;
+            background-color: #0c143c; /* Dark blue space background */
+            color: #e2e8f0;
+        }
+        .font-tajawal-bold { font-family: 'Tajawal', sans-serif; font-weight: 800; }
+        .spinner, .gemini-spinner { border: 2px solid rgba(255,255,255,0.2); border-top: 2px solid #f59e0b; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; }
+        .gemini-spinner { border-top-color: #8b5cf6; } /* Purple for Gemini */
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        
+        /* Custom Scrollbar */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #1e293b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #d97706; border-radius: 10px; }
+        
+        /* Sidebar Link Styles */
+        .sidebar-link { 
+            display: flex; align-items: center; padding: 0.75rem 1rem; border-radius: 0.5rem; 
+            transition: background-color 0.2s, color 0.2s, transform 0.2s;
+            color: #94a3b8; /* Lighter text for dark sidebar */
+        }
+        .sidebar-link.active { 
+            background-color: rgba(245, 158, 11, 0.15); /* Amber translucent */
+            color: white; 
+            font-weight: 700;
+            border-right: 3px solid #f59e0b;
+        }
+        .sidebar-link:not(.active):hover { 
+            background-color: rgba(245, 158, 11, 0.1);
+            color: #e2e8f0;
+            transform: translateX(-5px);
+        }
+        
+        /* Modal Animation */
+        .modal-fade-in { animation: fadeIn 0.3s ease-out forwards; }
+        @keyframes fadeIn { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+        
+        /* File Input */
+        .file-input-wrapper { position: relative; overflow: hidden; display: inline-block; }
+        .file-input-wrapper input[type=file] { font-size: 100px; position: absolute; left: 0; top: 0; opacity: 0; cursor: pointer; }
+        
+        /* Login View Background */
+        #login-view {
+            background-image: url('https://www.transparenttextures.com/patterns/stardust.png');
+            position: relative;
+        }
+        #login-view::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: radial-gradient(ellipse at center, rgba(12, 20, 60, 0.8) 0%, rgba(12, 20, 60, 1) 100%);
+            z-index: 1;
+        }
+        #login-forms-container {
+            position: relative;
+            z-index: 2;
+        }
+
+        /* Sidebar Mobile Styles */
+        @media (max-width: 1023px) {
+            #teacher-sidebar {
+                transform: translateX(100%);
+            }
+            #teacher-sidebar.open {
+                transform: translateX(0);
+            }
+            #teacher-main-content {
+                margin-right: 0 !important;
+            }
+        }
+
+        /* Glassmorphism Effect */
+        .glass-card {
+            background: rgba(20, 30, 70, 0.5);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        /* Radiant Stars Background */
+        #stars-container {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            overflow: hidden;
+            z-index: -1;
+        }
+
+        .star {
+            position: absolute;
+            background-color: white;
+            border-radius: 50%;
+            animation: glow 2.5s infinite alternate;
+        }
+
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 6px #fff, 0 0 12px #fcd34d, 0 0 20px #f59e0b;
+            }
+            to {
+                box-shadow: 0 0 12px #fff, 0 0 20px #fcd34d, 0 0 35px #f59e0b;
+            }
+        }
+        
+        /* Tab Styles */
+        .tab-button {
+            transition: all 0.2s;
+            border-bottom: 2px solid transparent;
+        }
+        .tab-button.active {
+            color: #f59e0b; /* amber-500 */
+            border-bottom-color: #f59e0b;
+        }
+    </style>
+</head>
+<body class="bg-slate-900 text-slate-300 transition-colors duration-500">
+    
+    <div id="stars-container"></div>
+
+    <!-- Global Notification -->
+    <div id="notification" class="fixed bottom-5 right-5 bg-amber-500 text-white py-2 px-4 rounded-lg shadow-lg text-sm transition-transform translate-x-[150%] z-[100]"></div>
+
+    <!-- Confirmation Modal -->
+    <div id="confirmation-modal" class="fixed inset-0 bg-black bg-opacity-70 z-[99] flex items-center justify-center p-4 hidden">
+        <div class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-sm modal-fade-in">
+            <div class="p-6 text-center">
+                <div id="confirmation-modal-icon" class="w-16 h-16 mx-auto mb-4 rounded-full flex items-center justify-center bg-red-900/50 text-red-500">
+                    <i data-feather="alert-triangle" class="w-8 h-8"></i>
+                </div>
+                <h3 id="confirmation-modal-title" class="text-xl font-bold font-tajawal-bold mb-2 text-white"></h3>
+                <p id="confirmation-modal-message" class="text-sm text-slate-400 mb-6"></p>
+                <div class="flex justify-center gap-4">
+                    <button id="confirm-btn" class="w-full text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-5 py-2.5">نعم، أنا متأكد</button>
+                    <button id="cancel-btn" class="w-full text-white bg-slate-700 hover:bg-slate-600 border border-slate-500 font-medium rounded-lg text-sm px-5 py-2.5">إلغاء</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Generic Modal for Forms -->
+    <div id="form-modal" class="fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4 hidden">
+        <div id="form-modal-content" class="bg-slate-800 border border-slate-700 rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] flex flex-col modal-fade-in">
+            <!-- Modal content will be injected here -->
+        </div>
+    </div>
+
+    <!-- Upload Progress Modal -->
+    <div id="upload-progress-modal" class="fixed inset-0 bg-black bg-opacity-80 z-[101] flex-col items-center justify-center p-4 hidden">
+        <div class="glass-card w-full max-w-sm p-6 text-center rounded-2xl">
+            <h3 class="text-xl font-bold font-tajawal-bold mb-4 text-white">جارٍ رفع الملف...</h3>
+            <div class="w-full bg-slate-700 rounded-full h-4">
+                <div id="upload-progress-bar" class="bg-amber-500 h-4 rounded-full transition-all duration-300" style="width: 0%"></div>
+            </div>
+            <p id="upload-progress-text" class="mt-2 text-sm text-slate-300">0%</p>
+        </div>
+    </div>
+
+
+    <!-- Main App Container -->
+    <div id="app-container">
+        <!-- Loading View -->
+        <div id="loading-view" class="min-h-screen flex items-center justify-center bg-slate-900">
+            <div class="text-center">
+                <div class="spinner w-12 h-12 border-4 border-t-amber-500 mx-auto"></div>
+                <p class="mt-4 text-lg text-slate-400">جارِ التحميل...</p>
+            </div>
+        </div>
+
+        <!-- Login View -->
+        <div id="login-view" class="min-h-screen flex-col hidden">
+             <header class="w-full p-4 flex justify-between items-center z-10">
+                 <h1 class="font-tajawal-bold text-lg md:text-xl text-amber-400">"بلسانٍ عربيٍ مبين"</h1>
+             </header>
+            <main class="flex-grow flex flex-col items-center justify-center p-4">
+                <div class="w-full max-w-5xl mx-auto flex flex-col lg:flex-row items-center justify-center gap-16" id="login-forms-container">
+                    <!-- Left side: Illustration and Title -->
+                    <div class="text-center lg:text-right">
+                        <h2 class="font-tajawal-bold text-4xl md:text-6xl font-bold text-white">المنصة الذهبية</h2>
+                        <p class="text-amber-300 mt-2 text-lg">في قواعد اللغة العربي</p>
+                    </div>
+
+                    <!-- Right side: Login Form -->
+                    <div class="w-full max-w-md space-y-8">
+                        <!-- Teacher Login -->
+                        <div class="glass-card rounded-2xl p-8">
+                            <h3 class="font-tajawal-bold text-2xl font-bold text-center mb-6 text-white">تسجيل دخول المدرس</h3>
+                            <form id="teacher-login-form" class="space-y-6">
+                                <div>
+                                    <label for="teacher-email" class="block mb-2 text-sm font-medium text-slate-400">البريد الإلكتروني</label>
+                                    <input type="email" id="teacher-email" value="teacher@test.com" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" readonly>
+                                </div>
+                                <div>
+                                    <label for="teacher-password" class="block mb-2 text-sm font-medium text-slate-400">كلمة المرور</label>
+                                    <input type="password" id="teacher-password" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5" required placeholder="••••••••" value="123456">
+                                </div>
+                                <button type="submit" id="teacher-login-btn" class="w-full text-white bg-amber-600 hover:bg-amber-700 font-medium rounded-lg text-sm px-5 py-3 text-center flex items-center justify-center gap-2 transition-all">
+                                    <span class="btn-text">دخول آمن</span>
+                                    <div class="spinner hidden"></div>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </main>
+            <footer class="w-full py-6 z-10 relative border-t border-slate-800">
+                <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
+                     <p>© 2026 المنصة الذهبية. جميع الحقوق محفوظة.</p>
+                </div>
+            </footer>
+        </div>
+
+        <!-- Teacher Dashboard Layout -->
+        <div id="teacher-dashboard-layout" class="hidden">
+            <div id="teacher-sidebar-backdrop" class="fixed inset-0 bg-black bg-opacity-50 z-40 hidden lg:hidden"></div>
+            <aside id="teacher-sidebar" class="fixed top-0 right-0 h-full bg-slate-900 border-l border-slate-800 w-64 p-4 z-50 transition-transform lg:translate-x-0">
+                <div class="flex flex-col h-full">
+                    <div class="text-center mb-8">
+                        <h1 class="font-tajawal-bold text-3xl font-bold text-white">المنصة الذهبية</h1>
+                        <p class="text-xs text-amber-400">لوحة تحكم المدرس</p>
+                    </div>
+                    <nav id="teacher-sidebar-nav" class="flex-grow space-y-2 overflow-y-auto custom-scrollbar pr-2"></nav>
+                    <div class="mt-auto pt-4">
+                         <button id="teacher-logout-btn" class="w-full text-slate-400 hover:bg-red-900/50 hover:text-white rounded-lg text-sm p-2.5 flex items-center justify-center gap-2 transition-colors">
+                             <i data-feather="log-out" class="w-5 h-5"></i><span>تسجيل الخروج</span>
+                         </button>
+                    </div>
+                </div>
+            </aside>
+            <main id="teacher-main-content" class="lg:mr-64 rtl:lg:mr-0 rtl:lg:ml-64 transition-all duration-300 bg-[#0c143c]">
+                <header class="w-full bg-slate-900/80 backdrop-blur-sm border-b border-slate-800 sticky top-0 z-30">
+                    <div class="container mx-auto px-4 py-3 flex justify-between items-center">
+                        <div class="flex items-center gap-4">
+                            <button id="teacher-menu-toggle-btn" class="p-2 rounded-md lg:hidden text-slate-400"><i data-feather="menu"></i></button>
+                            <h2 id="teacher-page-title" class="font-tajawal-bold text-xl md:text-2xl text-white"></h2>
+                        </div>
+                        <div class="flex items-center gap-4">
+                            <div id="teacher-user-profile-display" class="flex items-center gap-3">
+                                <span id="teacher-user-name-display" class="font-semibold text-sm text-slate-300"></span>
+                                <img id="teacher-user-avatar" src="https://i.ibb.co/yWdK8Bf/teacher-avatar.png" class="w-9 h-9 rounded-full object-cover bg-amber-500 p-1">
+                            </div>
+                        </div>
+                    </div>
+                </header>
+                <main id="teacher-view-container" class="p-4 md:p-6"></main>
+            </main>
+        </div>
+    </div>
+
+    <!-- VIEW TEMPLATES -->
+    <template id="teacher-dashboard-template">
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div class="glass-card p-5 rounded-xl flex items-center gap-4"><div class="bg-blue-900/50 p-3 rounded-full"><i data-feather="users" class="text-blue-400"></i></div><div><p class="text-slate-400 text-sm">إجمالي الطلاب</p><p id="stats-total-students" class="text-2xl font-bold text-white">0</p></div></div>
+            <div class="glass-card p-5 rounded-xl flex items-center gap-4"><div class="bg-amber-900/50 p-3 rounded-full"><i data-feather="book-open" class="text-amber-400"></i></div><div><p class="text-slate-400 text-sm">الواجبات النشطة</p><p id="stats-active-assignments" class="text-2xl font-bold text-white">0</p></div></div>
+            <div class="glass-card p-5 rounded-xl flex items-center gap-4"><div class="bg-green-900/50 p-3 rounded-full"><i data-feather="check-circle" class="text-green-400"></i></div><div><p class="text-slate-400 text-sm">تسليمات جديدة</p><p id="stats-recent-submissions" class="text-2xl font-bold text-white">0</p></div></div>
+            <div class="glass-card p-5 rounded-xl flex items-center gap-4"><div class="bg-red-900/50 p-3 rounded-full"><i data-feather="help-circle" class="text-red-400"></i></div><div><p class="text-slate-400 text-sm">أسئلة جديدة</p><p id="stats-new-questions" class="text-2xl font-bold text-white">0</p></div></div>
+        </div>
+        <div class="mt-8 grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div class="lg:col-span-2 glass-card p-5 rounded-xl"><h3 class="font-tajawal-bold text-xl font-bold mb-4 text-white">أداء الطلاب في آخر اختبار</h3><div class="h-80"><canvas id="quiz-performance-chart"></canvas></div></div>
+            <div class="glass-card p-5 rounded-xl"><h3 class="font-tajawal-bold text-xl font-bold mb-4 text-white">آخر الإعلانات</h3><div id="latest-announcements-list" class="space-y-3"><p class="text-slate-500">لا توجد إعلانات حالياً.</p></div></div>
+        </div>
+    </template>
+    
+    <template id="teacher-announcements-library-template">
+        <div>
+            <div class="border-b border-slate-700 mb-6">
+                <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                    <button id="announcements-tab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">
+                        الإعلانات
+                    </button>
+                    <button id="library-tab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">
+                        المكتبة
+                    </button>
+                </nav>
+            </div>
+            
+            <div id="announcements-content">
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2">
+                         <h2 class="font-tajawal-bold text-3xl font-bold text-white mb-6">قائمة الإعلانات</h2>
+                         <div id="announcements-list" class="space-y-4">
+                             <div class="text-center py-10"><p class="text-slate-500">جار تحميل الإعلانات...</p></div>
+                         </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 h-fit">
+                         <h3 class="font-tajawal-bold text-2xl font-bold mb-4 text-white">نشر إعلان جديد</h3>
+                         <form id="add-announcement-form" class="space-y-4">
+                             <div id="target-audience-selector-container" class="space-y-4"></div>
+                              <div>
+                                 <label for="new-announcement-text" class="block mb-2 text-sm font-medium text-slate-400">نص الإعلان</label>
+                                 <textarea id="new-announcement-text" rows="6" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg focus:ring-amber-500 focus:border-amber-500 block w-full p-2.5 custom-scrollbar" required></textarea>
+                              </div>
+                              <div>
+                                 <label for="announcement-file-upload" class="block mb-2 text-sm font-medium text-slate-400">إرفاق ملف (اختياري)</label>
+                                 <div class="file-input-wrapper w-full">
+                                     <button type="button" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                                         <i data-feather="paperclip"></i>
+                                         <span id="announcement-file-label">اختر ملف...</span>
+                                     </button>
+                                     <input type="file" id="announcement-file-upload" accept="image/*,application/pdf,.doc,.docx,.xls,.xlsx,.ppt,.pptx">
+                                 </div>
+                              </div>
+                             <button type="submit" id="add-announcement-btn" class="w-full text-white bg-amber-600 hover:bg-amber-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2">
+                                 <span class="btn-text">نشر الإعلان</span>
+                                 <div class="spinner hidden"></div>
+                             </button>
+                         </form>
+                    </div>
+                </div>
+            </div>
+
+            <div id="library-content" class="hidden">
+                 <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    <div class="md:col-span-2">
+                         <h2 class="font-tajawal-bold text-3xl font-bold text-white mb-6">محتويات المكتبة</h2>
+                         <div id="library-list" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                             <div class="col-span-full text-center py-10"><p class="text-slate-500">جار تحميل المكتبة...</p></div>
+                         </div>
+                    </div>
+                    <div class="glass-card rounded-2xl p-6 h-fit">
+                         <h3 class="font-tajawal-bold text-2xl font-bold mb-4 text-white">إضافة مادة جديدة</h3>
+                         <form id="add-library-item-form" class="space-y-4">
+                             <div>
+                                 <label for="library-item-title" class="block mb-2 text-sm font-medium text-slate-400">عنوان المادة</label>
+                                 <input type="text" id="library-item-title" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                             </div>
+                             <div class="relative">
+                                 <label for="library-item-desc" class="block mb-2 text-sm font-medium text-slate-400">وصف قصير</label>
+                                 <textarea id="library-item-desc" rows="3" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 custom-scrollbar"></textarea>
+                                 <button type="button" id="generate-desc-btn" class="absolute bottom-2 left-2 text-purple-400 hover:text-purple-300 p-1 rounded-full bg-purple-900/50" title="✨ توليد وصف بالذكاء الاصطناعي">
+                                     <span class="btn-text">✨</span>
+                                     <div class="gemini-spinner w-4 h-4 hidden"></div>
+                                 </button>
+                             </div>
+                             <div>
+                                 <label for="library-item-type" class="block mb-2 text-sm font-medium text-slate-400">نوع المادة</label>
+                                 <select id="library-item-type" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5">
+                                     <option value="video">رابط فيديو (يوتيوب)</option>
+                                     <option value="pdf">ملف PDF</option>
+                                     <option value="file">ملف آخر</option>
+                                 </select>
+                             </div>
+                             <div id="library-url-container">
+                                 <label for="library-item-url" class="block mb-2 text-sm font-medium text-slate-400">الرابط</label>
+                                 <input type="url" id="library-item-url" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" placeholder="https://youtube.com/...">
+                             </div>
+                             <div id="library-file-container" class="hidden">
+                                 <label for="library-file-upload" class="block mb-2 text-sm font-medium text-slate-400">الملف</label>
+                                 <div class="file-input-wrapper w-full">
+                                     <button type="button" class="w-full bg-slate-700 hover:bg-slate-600 text-slate-300 font-medium py-2 px-4 rounded-lg flex items-center justify-center gap-2">
+                                         <i data-feather="upload"></i>
+                                         <span id="library-file-label">اختر ملف...</span>
+                                     </button>
+                                     <input type="file" id="library-file-upload">
+                                 </div>
+                             </div>
+                             <button type="submit" id="add-library-item-btn" class="w-full text-white bg-amber-600 hover:bg-amber-700 font-medium rounded-lg text-sm px-5 py-2.5 text-center flex items-center justify-center gap-2">
+                                 <span class="btn-text">إضافة للمكتبة</span>
+                                 <div class="spinner hidden"></div>
+                             </button>
+                         </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="teacher-assignments-quizzes-template">
+        <div>
+            <div class="border-b border-slate-700 mb-6">
+                <nav class="-mb-px flex gap-6" aria-label="Tabs">
+                    <button id="assignments-tab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">
+                        الواجبات
+                    </button>
+                    <button id="quizzes-tab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">
+                        الاختبارات
+                    </button>
+                    <button id="objections-tab" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg">
+                        الاعتراضات
+                    </button>
+                </nav>
+            </div>
+
+            <div id="assignments-content">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="font-tajawal-bold text-3xl font-bold text-white">إدارة الواجبات</h2>
+                    <button id="add-assignment-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-feather="plus"></i>
+                        <span>واجب جديد</span>
+                    </button>
+                </div>
+                <div id="teacher-assignments-list" class="space-y-4">
+                    <div class="text-center py-10"><p class="text-slate-500">جار تحميل الواجبات...</p></div>
+                </div>
+            </div>
+
+            <div id="quizzes-content" class="hidden">
+                <div class="flex justify-between items-center mb-6">
+                    <h2 class="font-tajawal-bold text-3xl font-bold text-white">إدارة الاختبارات</h2>
+                    <button id="add-quiz-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg flex items-center gap-2">
+                        <i data-feather="plus"></i>
+                        <span>اختبار جديد</span>
+                    </button>
+                </div>
+                <div id="teacher-quizzes-list" class="space-y-4">
+                    <div class="text-center py-10"><p class="text-slate-500">جار تحميل الاختبارات...</p></div>
+                </div>
+            </div>
+
+            <div id="objections-content" class="hidden">
+                 <h2 class="font-tajawal-bold text-3xl font-bold text-white mb-6">اعتراضات الطلاب</h2>
+                 <div id="objections-list" class="space-y-4">
+                     <div class="text-center py-10"><p class="text-slate-500">جار تحميل الاعتراضات...</p></div>
+                 </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="teacher-questions-template">
+        <h2 class="font-tajawal-bold text-3xl font-bold text-white mb-6">أسئلة الطلاب</h2>
+        <div id="teacher-questions-list" class="space-y-4">
+            <div class="text-center py-10"><p class="text-slate-500">جار تحميل الأسئلة...</p></div>
+        </div>
+    </template>
+
+    <template id="teacher-students-template">
+        <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4">
+            <h2 class="font-tajawal-bold text-3xl font-bold text-white">قائمة الطلاب</h2>
+            <div class="flex items-center gap-2">
+                <select id="filter-institute" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5">
+                    <option value="all">كل المعاهد</option>
+                </select>
+                <select id="filter-gender" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg p-2.5">
+                    <option value="all">الكل</option>
+                    <option value="male">ذكور</option>
+                    <option value="female">إناث</option>
+                </select>
+                <input type="text" id="student-search-input" class="w-full max-w-xs bg-slate-700 border border-slate-600 text-white rounded-lg p-2.5" placeholder="ابحث...">
+                <button id="add-student-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2.5 px-4 rounded-lg flex items-center gap-2">
+                    <i data-feather="plus"></i>
+                    <span>إضافة طالب</span>
+                </button>
+            </div>
+        </div>
+        <div class="glass-card rounded-xl overflow-hidden">
+            <div id="teacher-students-list" class="divide-y divide-slate-700">
+                <div class="text-center py-10"><p class="text-slate-500">جار تحميل الطلاب...</p></div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="teacher-leaderboard-template">
+        <h2 class="font-tajawal-bold text-3xl font-bold text-white mb-6">لوحة الصدارة</h2>
+        <div class="glass-card rounded-xl overflow-hidden">
+            <div id="leaderboard-list" class="divide-y divide-slate-700">
+                <div class="text-center py-10"><p class="text-slate-500">جار تحميل لوحة الصدارة...</p></div>
+            </div>
+        </div>
+    </template>
+
+    <template id="teacher-view-student-profile-template">
+        <div>
+            <div class="flex items-center gap-4 mb-6">
+                <button id="back-to-students-btn" class="p-2 rounded-md hover:bg-slate-700"><i data-feather="arrow-right"></i></button>
+                <div>
+                    <h2 id="profile-student-name" class="font-tajawal-bold text-3xl font-bold text-white"></h2>
+                    <p id="profile-student-details" class="text-sm text-slate-500"></p>
+                </div>
+            </div>
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="font-bold text-xl mb-4 text-white">الواجبات المسلمة</h3>
+                    <div id="profile-assignments-list" class="space-y-3">
+                        <p class="text-slate-500">لا توجد واجبات مسلمة.</p>
+                    </div>
+                </div>
+                <div class="glass-card p-6 rounded-xl">
+                    <h3 class="font-bold text-xl mb-4 text-white">نتائج الاختبارات</h3>
+                    <div id="profile-quizzes-list" class="space-y-3">
+                        <p class="text-slate-500">لا توجد نتائج اختبارات.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
+
+    <template id="add-student-modal-template">
+        <div class="flex justify-between items-center p-4 border-b border-slate-700">
+            <h3 class="font-tajawal-bold text-2xl text-white">إضافة طالب جديد</h3>
+            <button class="close-modal-btn p-2 rounded-full hover:bg-slate-700"><i data-feather="x"></i></button>
+        </div>
+        <form id="add-student-form" class="p-6 space-y-4">
+            <div>
+                <label for="student-name" class="block mb-2 text-sm font-medium text-slate-400">اسم الطالب الكامل</label>
+                <input type="text" id="student-name" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+            </div>
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label for="student-institute" class="block mb-2 text-sm font-medium text-slate-400">المعهد</label>
+                    <select id="student-institute" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                    </select>
+                </div>
+                <div>
+                    <label for="student-gender" class="block mb-2 text-sm font-medium text-slate-400">الجنس</label>
+                    <select id="student-gender" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+                        <option value="male">ذكر</option>
+                        <option value="female">أنثى</option>
+                    </select>
+                </div>
+            </div>
+        </form>
+        <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end">
+            <button type="submit" form="add-student-form" id="save-student-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center gap-2">
+                <span class="btn-text">إضافة وحفظ</span>
+                <div class="spinner hidden"></div>
+            </button>
+        </div>
+    </template>
+
+
+    <template id="add-quiz-modal-template">
+        <div class="flex justify-between items-center p-4 border-b border-slate-700">
+            <h3 id="quiz-modal-title" class="font-tajawal-bold text-2xl text-white">إنشاء اختبار جديد</h3>
+            <button class="close-modal-btn p-2 rounded-full hover:bg-slate-700"><i data-feather="x"></i></button>
+        </div>
+        <form id="quiz-form" class="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+            <input type="hidden" id="quiz-id">
+            <div>
+                <label for="quiz-title" class="block mb-2 text-sm font-medium text-slate-400">عنوان الاختبار</label>
+                <input type="text" id="quiz-title" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+            </div>
+            <div>
+                <label for="quiz-time-limit" class="block mb-2 text-sm font-medium text-slate-400">الوقت المحدد (بالدقائق)</label>
+                <input type="number" id="quiz-time-limit" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required min="1">
+            </div>
+             <div>
+                <label for="quiz-publish-date" class="block mb-2 text-sm font-medium text-slate-400">تاريخ النشر (اختياري)</label>
+                <input type="datetime-local" id="quiz-publish-date" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5">
+            </div>
+            <div id="quiz-target-audience-selector" class="space-y-4"></div>
+            <hr class="border-slate-700 my-4">
+            <h4 class="font-bold text-lg text-white">الأسئلة</h4>
+            <div id="quiz-questions-builder" class="space-y-6">
+                <!-- Question builder will be injected here -->
+            </div>
+            <div class="flex gap-4 mt-4 flex-wrap">
+                <button type="button" id="add-mc-question-btn" class="text-sm bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-3 rounded-lg flex items-center gap-2">
+                    <i data-feather="plus-circle" class="w-4 h-4"></i> اختيار من متعدد
+                </button>
+                <button type="button" id="add-tf-question-btn" class="text-sm bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-3 rounded-lg flex items-center gap-2">
+                    <i data-feather="plus-circle" class="w-4 h-4"></i> صح/خطأ
+                </button>
+                 <button type="button" id="add-text-question-btn" class="text-sm bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-3 rounded-lg flex items-center gap-2">
+                    <i data-feather="plus-circle" class="w-4 h-4"></i> أكمل الفراغ
+                </button>
+                <button type="button" id="add-essay-question-btn" class="text-sm bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-3 rounded-lg flex items-center gap-2">
+                    <i data-feather="plus-circle" class="w-4 h-4"></i> سؤال مقالي
+                </button>
+            </div>
+        </form>
+        <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end">
+            <button type="submit" form="quiz-form" id="save-quiz-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center gap-2">
+                <span class="btn-text">حفظ الاختبار</span>
+                <div class="spinner hidden"></div>
+            </button>
+        </div>
+    </template>
+
+    <template id="add-assignment-modal-template">
+         <div class="flex justify-between items-center p-4 border-b border-slate-700">
+            <h3 id="assignment-modal-title" class="font-tajawal-bold text-2xl text-white">إنشاء واجب جديد</h3>
+            <button class="close-modal-btn p-2 rounded-full hover:bg-slate-700"><i data-feather="x"></i></button>
+        </div>
+        <form id="assignment-form" class="p-6 space-y-4 overflow-y-auto custom-scrollbar">
+            <input type="hidden" id="assignment-id">
+            <div>
+                <label for="assignment-title-input" class="block mb-2 text-sm font-medium text-slate-400">عنوان الواجب</label>
+                <input type="text" id="assignment-title-input" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required>
+            </div>
+            <div>
+                <label for="assignment-deadline-input" class="block mb-2 text-sm font-medium text-slate-400">آخر موعد للتسليم (اختياري)</label>
+                <input type="date" id="assignment-deadline-input" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5">
+            </div>
+             <div>
+                <label for="assignment-publish-date" class="block mb-2 text-sm font-medium text-slate-400">تاريخ النشر (اختياري)</label>
+                <input type="datetime-local" id="assignment-publish-date" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5">
+            </div>
+            <div id="assignment-target-audience-selector" class="space-y-4"></div>
+            <hr class="border-slate-700 my-4">
+            <h4 class="font-bold text-lg text-white">الأسئلة</h4>
+            <div id="assignment-questions-builder" class="space-y-4">
+                <!-- Assignment questions will be injected here -->
+            </div>
+            <button type="button" id="add-assignment-question-btn" class="text-sm bg-slate-600 hover:bg-slate-500 text-white font-semibold py-2 px-3 rounded-lg flex items-center gap-2">
+                <i data-feather="plus" class="w-4 h-4"></i> أضف سؤالاً
+            </button>
+        </form>
+        <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end">
+            <button type="submit" form="assignment-form" id="save-assignment-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center gap-2">
+                <span class="btn-text">حفظ الواجب</span>
+                <div class="spinner hidden"></div>
+            </button>
+        </div>
+    </template>
+
+    <template id="grade-submission-modal-template">
+        <div class="flex justify-between items-center p-4 border-b border-slate-700">
+            <h3 class="font-tajawal-bold text-2xl text-white">تصحيح الواجب</h3>
+            <button class="close-modal-btn p-2 rounded-full hover:bg-slate-700"><i data-feather="x"></i></button>
+        </div>
+        <div class="p-6 overflow-y-auto custom-scrollbar">
+            <div class="mb-4">
+                <p class="text-slate-400">الطالب: <span id="grade-student-name" class="font-bold text-white"></span></p>
+                <p class="text-slate-400 text-sm">تاريخ التسليم: <span id="grade-submission-date" class="font-bold text-white"></span></p>
+            </div>
+             <div id="objection-reason-container" class="hidden mb-4 p-3 bg-red-900/50 border border-red-700 rounded-lg">
+                 <h4 class="font-bold text-red-300">سبب الاعتراض:</h4>
+                 <p id="objection-reason-text" class="text-white"></p>
+             </div>
+            <div id="submission-answers-container" class="space-y-4">
+                <!-- Answers will be injected here -->
+            </div>
+            <form id="grading-form" class="mt-6 pt-6 border-t border-slate-700 space-y-4">
+                <div>
+                    <label for="grade-score" class="block mb-2 text-sm font-medium text-slate-400">الدرجة (من 100)</label>
+                    <input type="number" id="grade-score" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5" required min="0" max="100">
+                </div>
+                <div>
+                    <label for="grade-feedback" class="block mb-2 text-sm font-medium text-slate-400">ملاحظات (اختياري)</label>
+                    <textarea id="grade-feedback" rows="4" class="bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5 custom-scrollbar"></textarea>
+                </div>
+            </form>
+        </div>
+        <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-end">
+            <button type="submit" form="grading-form" id="save-grade-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center gap-2">
+                <span class="btn-text">حفظ التصحيح</span>
+                <div class="spinner hidden"></div>
+            </button>
+        </div>
+    </template>
+
+    <template id="teacher-review-quiz-submission-template">
+        <div class="flex justify-between items-center p-4 border-b border-slate-700">
+            <div>
+                <h3 class="font-tajawal-bold text-2xl text-white">مراجعة إجابات الطالب</h3>
+                <p id="review-quiz-student-name" class="text-sm text-slate-400"></p>
+            </div>
+            <button class="close-modal-btn p-2 rounded-full hover:bg-slate-700"><i data-feather="x"></i></button>
+        </div>
+        <form id="review-quiz-form" class="p-6 space-y-6 overflow-y-auto custom-scrollbar">
+            <!-- Review content will be injected here -->
+        </form>
+        <div class="p-4 bg-slate-900/50 border-t border-slate-700 flex justify-between items-center">
+            <div class="text-lg">النتيجة النهائية: <span id="review-quiz-final-score" class="font-bold text-amber-400"></span></div>
+            <button type="submit" form="review-quiz-form" id="save-quiz-grade-btn" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-6 rounded-lg flex items-center justify-center gap-2">
+                <span class="btn-text">حفظ التصحيح النهائي</span>
+                <div class="spinner hidden"></div>
+            </button>
+        </div>
+    </template>
+    
+    <template id="teacher-view-assignment-submissions-template">
+        <div>
+            <div class="flex items-center gap-4 mb-6">
+                <button id="back-to-assignments-list-btn" class="p-2 rounded-md hover:bg-slate-700"><i data-feather="arrow-right"></i></button>
+                <div>
+                    <h2 id="view-submissions-title" class="font-tajawal-bold text-3xl font-bold text-white"></h2>
+                    <p class="text-sm text-slate-500">قائمة التسليمات</p>
+                </div>
+            </div>
+            <div id="submissions-list-container" class="space-y-4">
+                <div class="text-center py-10"><p class="text-slate-500">جار تحميل التسليمات...</p></div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="teacher-view-quiz-results-template">
+        <div>
+            <div class="flex items-center gap-4 mb-6">
+                <button id="back-to-quizzes-list-btn" class="p-2 rounded-md hover:bg-slate-700"><i data-feather="arrow-right"></i></button>
+                <div>
+                    <h2 id="view-results-title" class="font-tajawal-bold text-3xl font-bold text-white"></h2>
+                    <p class="text-sm text-slate-500">نتائج الطلاب</p>
+                </div>
+            </div>
+            <div id="quiz-results-list-container" class="space-y-4">
+                <div class="text-center py-10"><p class="text-slate-500">جار تحميل النتائج...</p></div>
+            </div>
+        </div>
+    </template>
+    
+    <template id="placeholder-template">
+        <div class="text-center p-8 glass-card rounded-lg">
+            <h3 class="font-bold text-2xl text-amber-400">قيد الإنشاء</h3>
+            <p class="text-slate-400 mt-2">هذه الصفحة قيد التطوير حالياً وستكون متاحة قريباً.</p>
+        </div>
+    </template>
+    
+    <script type="module">
+        // --- Firebase Imports ---
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, setPersistence, browserLocalPersistence, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, setDoc, serverTimestamp, collection, addDoc, query, where, onSnapshot, getDocs, updateDoc, deleteDoc, Timestamp, orderBy, limit, increment } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+        import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
+        // --- Firebase Config ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyBRlUgL8dLxktp2bWzNbQA1dGIufuI3IIM",
+            authDomain: "ayad-mohammed.firebaseapp.com",
+            projectId: "ayad-mohammed",
+            storageBucket: "ayad-mohammed.appspot.com",
+            messagingSenderId: "949342450304",
+            appId: "1:949342450304:web:e21064c3a216ce73822c65"
+        };
+        
+        // --- App Initialization ---
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const storage = getStorage(app);
+        const appId = firebaseConfig.projectId;
+
+        // --- Global State & Elements ---
+        const App = {
+            viewElements: {
+                loading: document.getElementById('loading-view'),
+                login: document.getElementById('login-view'),
+                teacher_dashboard: document.getElementById('teacher-dashboard-layout'),
+            },
+            currentUser: null,
+            currentView: { id: null, data: null },
+            listeners: {},
+            charts: {},
+            notificationTimeout: null,
+            institutes: {
+                'dijlah': 'معهد دجلة',
+                'ruwwad': 'معهد رواد المستقبل',
+                'atlas': 'معهد أطلس'
+            }
+        };
+
+        // --- Gemini API Helper ---
+        async function callGemini(prompt, button) {
+            if (button) UI.toggleButtonLoading(button, true, true);
+            const payload = { contents: [{ role: "user", parts: [{ text: prompt }] }] };
+            const apiKey = ""; // Handled by environment
+            const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${apiKey}`;
+            try {
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                if (!response.ok) throw new Error(`API request failed with status ${response.status}`);
+                const result = await response.json();
+                if (result.candidates?.[0]?.content?.parts?.[0]?.text) {
+                    return result.candidates[0].content.parts[0].text;
+                }
+                throw new Error("No response from AI.");
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                UI.showNotification("حدث خطأ أثناء الاتصال بالذكاء الاصطناعي.", true);
+                return null;
+            } finally {
+                if (button) UI.toggleButtonLoading(button, false, true);
+            }
+        }
+        
+        // --- File Upload Helper ---
+        async function uploadFile(file, path) {
+            if (!file) return null;
+
+            const modal = document.getElementById('upload-progress-modal');
+            const progressBar = document.getElementById('upload-progress-bar');
+            const progressText = document.getElementById('upload-progress-text');
+
+            modal.classList.remove('hidden');
+            modal.classList.add('flex');
+
+            const storageRef = ref(storage, path);
+            const uploadTask = uploadBytesResumable(storageRef, file);
+
+            return new Promise((resolve, reject) => {
+                uploadTask.on('state_changed',
+                    (snapshot) => {
+                        const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                        progressBar.style.width = progress + '%';
+                        progressText.textContent = Math.round(progress) + '%';
+                    },
+                    (error) => {
+                        console.error("Upload failed:", error);
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                        UI.showNotification('فشل رفع الملف.', true);
+                        reject(error);
+                    },
+                    async () => {
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        modal.classList.add('hidden');
+                        modal.classList.remove('flex');
+                        UI.showNotification('تم رفع الملف بنجاح.');
+                        resolve({ downloadURL, fileName: file.name, fileType: file.type, size: file.size });
+                    }
+                );
+            });
+        }
+
+        // --- UI Manager ---
+        const UI = {
+            renderView(viewName) {
+                Object.values(App.viewElements).forEach(view => view.classList.add('hidden'));
+                const viewToShow = App.viewElements[viewName];
+                if (viewToShow) {
+                    viewToShow.classList.remove('hidden');
+                    if(viewName === 'login') viewToShow.classList.add('flex');
+                }
+                feather.replace();
+            },
+            
+            setupLoginView() {
+                const teacherForm = document.getElementById('teacher-login-form');
+                if (teacherForm.dataset.initialized) return;
+                teacherForm.dataset.initialized = 'true';
+                teacherForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const button = document.getElementById('teacher-login-btn');
+                    this.toggleButtonLoading(button, true);
+                    const email = document.getElementById('teacher-email').value;
+                    const password = document.getElementById('teacher-password').value;
+                    try {
+                        await setPersistence(auth, browserLocalPersistence);
+                        await signInWithEmailAndPassword(auth, email, password);
+                    } catch (error) {
+                        this.showNotification("فشل تسجيل الدخول. تأكد من كلمة المرور.", true);
+                    } finally {
+                        this.toggleButtonLoading(button, false);
+                    }
+                };
+            },
+
+            async setupTeacherDashboard(user) {
+                this.renderView('teacher_dashboard');
+                const userDocRef = doc(db, `artifacts/${appId}/users/${user.uid}`);
+                const userDoc = await getDoc(userDocRef);
+                
+                let userData;
+                if (!userDoc.exists() || userDoc.data().role !== 'teacher') {
+                    await setDoc(userDocRef, { name: 'الأستاذ إياد', role: 'teacher', createdAt: serverTimestamp() });
+                    const newUserDoc = await getDoc(userDocRef);
+                    userData = { type: 'teacher', data: { uid: user.uid, ...newUserDoc.data() } };
+                } else {
+                    userData = { type: 'teacher', data: { uid: user.uid, ...userDoc.data() } };
+                }
+                
+                App.currentUser = userData;
+                document.getElementById('teacher-user-name-display').textContent = 'الأستاذ إياد';
+                
+                const teacherLinks = [
+                    { id: 'dashboard', icon: 'grid', text: 'لوحة التحكم' },
+                    { id: 'announcements-library', icon: 'archive', text: 'الإعلانات والمكتبة' },
+                    { id: 'assignments-quizzes', icon: 'edit', text: 'الواجبات والاختبارات' },
+                    { id: 'students', icon: 'users', text: 'الطلاب' },
+                    { id: 'leaderboard', icon: 'bar-chart-2', text: 'لوحة الصدارة' },
+                    { id: 'questions', icon: 'help-circle', text: 'أسئلة الطلاب' },
+                ];
+                
+                this.setupSidebar('teacher-sidebar-nav', teacherLinks);
+                this.setupMobileMenu('teacher-menu-toggle-btn', 'teacher-sidebar', 'teacher-sidebar-backdrop');
+                document.getElementById('teacher-logout-btn').onclick = () => {
+                    this.showConfirmationModal('تسجيل الخروج', 'هل أنت متأكد أنك تريد تسجيل الخروج؟', async () => {
+                        await signOut(auth);
+                        window.location.reload();
+                    });
+                };
+                this.navigateTo('dashboard');
+            },
+            
+            setupSidebar(navElementId, links) {
+                const nav = document.getElementById(navElementId);
+                nav.innerHTML = '';
+                links.forEach(link => {
+                    const a = document.createElement('a');
+                    a.href = '#';
+                    a.className = 'sidebar-link';
+                    a.dataset.view = link.id;
+                    a.innerHTML = `<i data-feather="${link.icon}" class="w-5 h-5 ml-3"></i><span>${link.text}</span>`;
+                    a.onclick = (e) => {
+                        e.preventDefault();
+                        this.navigateTo(link.id);
+                        if (window.innerWidth < 1024) {
+                            nav.closest('#teacher-sidebar').classList.remove('open');
+                            document.getElementById('teacher-sidebar-backdrop').classList.add('hidden');
+                        }
+                    };
+                    nav.appendChild(a);
+                });
+                feather.replace();
+            },
+
+            setupMobileMenu(toggleBtnId, sidebarId, backdropId) {
+                const sidebar = document.getElementById(sidebarId);
+                const toggleBtn = document.getElementById(toggleBtnId);
+                const backdrop = document.getElementById(backdropId);
+
+                toggleBtn.onclick = () => {
+                    sidebar.classList.toggle('open');
+                    backdrop.classList.toggle('hidden');
+                };
+                backdrop.onclick = () => {
+                    sidebar.classList.remove('open');
+                    backdrop.classList.add('hidden');
+                };
+            },
+
+            navigateTo(viewId, viewData = null) {
+                // Clear any existing listeners or intervals to prevent memory leaks
+                Object.values(App.listeners).forEach(unsub => typeof unsub === 'function' && unsub());
+                App.listeners = {};
+                Object.values(App.charts).forEach(chart => chart.destroy());
+                App.charts = {};
+
+                App.currentView = { id: viewId, data: viewData };
+
+                document.querySelectorAll('#teacher-sidebar-nav .sidebar-link').forEach(link => {
+                    link.classList.toggle('active', link.dataset.view === viewId || `view-${link.dataset.view}`.includes(viewId) );
+                });
+
+                const pageTitleEl = document.querySelector(`#teacher-sidebar-nav .sidebar-link.active span`);
+                document.getElementById('teacher-page-title').textContent = viewData?.title || (pageTitleEl ? pageTitleEl.textContent : 'المنصة الذهبية');
+
+                const viewContainer = document.getElementById('teacher-view-container');
+                viewContainer.innerHTML = '';
+                
+                let templateId = `teacher-${viewId}-template`;
+                let template = document.getElementById(templateId);
+                
+                if(!template) template = document.getElementById('placeholder-template');
+                
+                const viewContent = template.content.cloneNode(true);
+                viewContainer.appendChild(viewContent);
+                
+                const setupFunc = ViewSetups[viewId];
+                if(typeof setupFunc === 'function') {
+                    setupFunc(viewData);
+                } else {
+                     console.warn(`No ViewSetup function found for view ID: ${viewId}`);
+                }
+
+                feather.replace();
+            },
+
+            showNotification(message, isError = false) {
+                const notification = document.getElementById('notification');
+                if (!notification) return;
+                if (App.notificationTimeout) clearTimeout(App.notificationTimeout);
+                notification.textContent = message;
+                notification.classList.remove('bg-amber-500', 'bg-red-500', 'translate-x-[150%]');
+                notification.classList.add(isError ? 'bg-red-500' : 'bg-amber-500', 'translate-x-0');
+                App.notificationTimeout = setTimeout(() => {
+                    notification.classList.remove('translate-x-0');
+                    notification.classList.add('translate-x-[150%]');
+                }, 3000);
+            },
+            
+            showConfirmationModal(title, message, onConfirm) {
+                 const modal = document.getElementById('confirmation-modal');
+                 document.getElementById('confirmation-modal-title').textContent = title;
+                 document.getElementById('confirmation-modal-message').textContent = message;
+                 modal.classList.remove('hidden');
+                 feather.replace();
+                 const confirmBtn = document.getElementById('confirm-btn');
+                 const cancelBtn = document.getElementById('cancel-btn');
+                 const confirmHandler = () => { onConfirm(); cleanup(); };
+                 const cleanup = () => {
+                     modal.classList.add('hidden');
+                     confirmBtn.removeEventListener('click', confirmHandler);
+                     cancelBtn.removeEventListener('click', cleanup);
+                 };
+                 confirmBtn.addEventListener('click', confirmHandler);
+                 cancelBtn.addEventListener('click', cleanup);
+            },
+
+            toggleButtonLoading(button, isLoading, isGemini = false) {
+                const btnText = button.querySelector('.btn-text');
+                const spinnerClass = isGemini ? '.gemini-spinner' : '.spinner';
+                const spinner = button.querySelector(spinnerClass);
+                if(btnText && spinner){ btnText.classList.toggle('hidden', isLoading); spinner.classList.toggle('hidden', !isLoading); }
+                button.disabled = isLoading;
+            },
+            
+            showFormModal(templateId, setupFunction, data = null) {
+                const modal = document.getElementById('form-modal');
+                const modalContent = document.getElementById('form-modal-content');
+                const template = document.getElementById(templateId);
+                modalContent.innerHTML = '';
+                modalContent.appendChild(template.content.cloneNode(true));
+                if (typeof setupFunction === 'function') setupFunction(modalContent, data);
+                modalContent.querySelector('.close-modal-btn').onclick = () => this.hideFormModal();
+                modal.classList.remove('hidden');
+                modal.classList.add('flex');
+                feather.replace();
+            },
+
+            hideFormModal() {
+                document.getElementById('form-modal').classList.add('hidden');
+            }
+        };
+
+        const createTargetAudienceSelector = (container) => {
+            if (!container) return;
+            container.innerHTML = `
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-400">توجيه إلى معهد</label>
+                        <select name="targetInstitute" class="target-institute-select bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5">
+                            <option value="all">كل المعاهد</option>
+                            ${Object.keys(App.institutes).map(key => `<option value="${key}">${App.institutes[key]}</option>`).join('')}
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block mb-2 text-sm font-medium text-slate-400">توجيه إلى جنس</label>
+                        <select name="targetGender" class="target-gender-select bg-slate-700 border border-slate-600 text-white text-sm rounded-lg block w-full p-2.5">
+                            <option value="all">الكل</option>
+                            <option value="male">ذكور فقط</option>
+                            <option value="female">إناث فقط</option>
+                        </select>
+                    </div>
+                </div>`;
+        };
+        
+        // --- View Setup Functions ---
+        const ViewSetups = {
+            'dashboard': async () => {
+                const stats = {
+                    students: document.getElementById('stats-total-students'),
+                    assignments: document.getElementById('stats-active-assignments'),
+                    submissions: document.getElementById('stats-recent-submissions'),
+                    questions: document.getElementById('stats-new-questions'),
+                };
+                
+                App.listeners.students = onSnapshot(collection(db, `artifacts/${appId}/students`), snap => stats.students.textContent = snap.size);
+                App.listeners.assignments = onSnapshot(collection(db, `artifacts/${appId}/public/data/assignments`), snap => stats.assignments.textContent = snap.size);
+                App.listeners.submissions = onSnapshot(query(collection(db, `artifacts/${appId}/public/data/submissions`), where("status", "==", "submitted")), snap => stats.submissions.textContent = snap.size);
+                App.listeners.questions = onSnapshot(query(collection(db, `artifacts/${appId}/public/data/questions`), where("answered", "==", false)), snap => stats.questions.textContent = snap.size);
+
+                const ctx = document.getElementById('quiz-performance-chart').getContext('2d');
+                const quizzesQuery = query(collection(db, `artifacts/${appId}/public/data/quizzes`), orderBy("createdAt", "desc"), limit(5));
+                const quizzesSnapshot = await getDocs(quizzesQuery);
+                const chartLabels = [];
+                const chartData = [];
+
+                for (const quizDoc of quizzesSnapshot.docs) {
+                    const quiz = quizDoc.data();
+                    chartLabels.unshift(quiz.title);
+                    const submissionsQuery = query(collection(db, `artifacts/${appId}/public/data/quizSubmissions`), where("quizId", "==", quizDoc.id));
+                    const submissionsSnapshot = await getDocs(submissionsQuery);
+                    if (submissionsSnapshot.empty) {
+                        chartData.unshift(0);
+                    } else {
+                        const totalScore = submissionsSnapshot.docs.reduce((sum, doc) => sum + (doc.data().score || 0), 0);
+                        chartData.unshift(Math.round(totalScore / submissionsSnapshot.size));
+                    }
+                }
+
+                if (App.charts.quizPerformance) App.charts.quizPerformance.destroy();
+                if (chartLabels.length === 0) {
+                    ctx.canvas.parentElement.innerHTML = `<div class="flex items-center justify-center h-full text-slate-500">لا توجد بيانات لعرضها.</div>`;
+                } else {
+                    App.charts.quizPerformance = new Chart(ctx, {
+                        type: 'bar',
+                        data: { 
+                            labels: chartLabels, 
+                            datasets: [{ 
+                                label: 'متوسط الدرجات', 
+                                data: chartData, 
+                                backgroundColor: 'rgba(245, 158, 11, 0.5)', 
+                                borderColor: 'rgba(245, 158, 11, 1)', 
+                                borderWidth: 1,
+                                borderRadius: 5
+                            }] 
+                        },
+                        options: { 
+                            scales: { 
+                                y: { beginAtZero: true, max: 100, grid: { color: 'rgba(255,255,255,0.1)' }, ticks: { color: '#94a3b8' } },
+                                x: { grid: { display: false }, ticks: { color: '#94a3b8' } }
+                            }, 
+                            responsive: true, 
+                            maintainAspectRatio: false,
+                            plugins: { legend: { labels: { color: '#94a3b8' } } }
+                        }
+                    });
+                }
+                
+                const announcementsList = document.getElementById('latest-announcements-list');
+                const latestAnnouncementsQuery = query(collection(db, `artifacts/${appId}/public/data/announcements`), orderBy("createdAt", "desc"), limit(3));
+                App.listeners.latestAnnouncements = onSnapshot(latestAnnouncementsQuery, (snapshot) => {
+                    if (!announcementsList) return;
+                    announcementsList.innerHTML = '';
+                    if (snapshot.empty) {
+                        announcementsList.innerHTML = `<p class="text-slate-500">لا توجد إعلانات حالياً.</p>`;
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const announcement = doc.data();
+                        const item = document.createElement('div');
+                        item.className = 'border-r-2 border-amber-500 pr-3';
+                        item.innerHTML = `
+                            <p class="text-sm text-white truncate">${announcement.text}</p>
+                            <p class="text-xs text-slate-500">${doc.data().createdAt.toDate().toLocaleDateString('ar-EG-u-nu-latn')}</p>
+                        `;
+                        announcementsList.appendChild(item);
+                    });
+                });
+            },
+            'announcements-library': () => {
+                const announcementsTab = document.getElementById('announcements-tab');
+                const libraryTab = document.getElementById('library-tab');
+                const announcementsContent = document.getElementById('announcements-content');
+                const libraryContent = document.getElementById('library-content');
+
+                const switchTab = (activeTab) => {
+                    if (activeTab === 'library') {
+                        libraryTab.classList.add('active');
+                        announcementsTab.classList.remove('active');
+                        libraryContent.classList.remove('hidden');
+                        announcementsContent.classList.add('hidden');
+                    } else {
+                        announcementsTab.classList.add('active');
+                        libraryTab.classList.remove('active');
+                        announcementsContent.classList.remove('hidden');
+                        libraryContent.classList.add('hidden');
+                    }
+                };
+
+                announcementsTab.onclick = () => switchTab('announcements');
+                libraryTab.onclick = () => switchTab('library');
+                
+                // Initialize to announcements tab
+                switchTab('announcements');
+
+                // Announcements Logic
+                const announcementsList = document.getElementById('announcements-list');
+                const addAnnouncementForm = document.getElementById('add-announcement-form');
+                const announcementFileInput = document.getElementById('announcement-file-upload');
+                const announcementFileLabel = document.getElementById('announcement-file-label');
+                let announcementFile = null;
+
+                createTargetAudienceSelector(document.getElementById('target-audience-selector-container'));
+
+                announcementFileInput.onchange = (e) => {
+                    announcementFile = e.target.files[0];
+                    announcementFileLabel.textContent = announcementFile ? announcementFile.name : 'اختر ملف...';
+                };
+
+                addAnnouncementForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById('add-announcement-btn');
+                    UI.toggleButtonLoading(btn, true);
+                    const text = document.getElementById('new-announcement-text').value;
+                    const targetInstitute = addAnnouncementForm.querySelector('.target-institute-select').value;
+                    const targetGender = addAnnouncementForm.querySelector('.target-gender-select').value;
+
+                    try {
+                        let fileData = null;
+                        if (announcementFile) {
+                            fileData = await uploadFile(announcementFile, `announcements/${Date.now()}_${announcementFile.name}`);
+                        }
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/announcements`), {
+                            text,
+                            targetInstitute,
+                            targetGender,
+                            file: fileData,
+                            createdAt: serverTimestamp()
+                        });
+                        UI.showNotification('تم نشر الإعلان بنجاح.');
+                        addAnnouncementForm.reset();
+                        announcementFile = null;
+                        announcementFileLabel.textContent = 'اختر ملف...';
+                    } catch (error) {
+                        console.error("Error adding announcement: ", error);
+                        UI.showNotification('حدث خطأ أثناء نشر الإعلان.', true);
+                    } finally {
+                        UI.toggleButtonLoading(btn, false);
+                    }
+                };
+
+                const qAnnouncements = query(collection(db, `artifacts/${appId}/public/data/announcements`), orderBy('createdAt', 'desc'));
+                App.listeners.announcements = onSnapshot(qAnnouncements, (snapshot) => {
+                    announcementsList.innerHTML = '';
+                    if (snapshot.empty) {
+                        announcementsList.innerHTML = `<div class="text-center py-10"><p class="text-slate-500">لا توجد إعلانات بعد.</p></div>`;
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg';
+                        card.innerHTML = `
+                            <p class="text-white whitespace-pre-wrap">${data.text}</p>
+                            <div class="flex justify-between items-center mt-3 text-xs text-slate-400">
+                                <span>${data.createdAt.toDate().toLocaleString('ar-EG')}</span>
+                                <button data-id="${doc.id}" class="delete-announcement-btn text-red-500 hover:text-red-400 p-1"><i data-feather="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                            ${data.file ? `<a href="${data.file.downloadURL}" target="_blank" class="mt-2 inline-flex items-center gap-2 text-amber-400 hover:text-amber-300 text-sm"><i data-feather="paperclip" class="w-4 h-4"></i> ${data.file.fileName}</a>` : ''}
+                        `;
+                        announcementsList.appendChild(card);
+                    });
+                    feather.replace();
+                    announcementsList.querySelectorAll('.delete-announcement-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            UI.showConfirmationModal('حذف الإعلان', 'هل أنت متأكد من حذف هذا الإعلان؟', async () => {
+                                await deleteDoc(doc(db, `artifacts/${appId}/public/data/announcements`, btn.dataset.id));
+                                UI.showNotification('تم حذف الإعلان.');
+                            });
+                        };
+                    });
+                });
+
+                // Library Logic
+                const libraryList = document.getElementById('library-list');
+                const addLibraryItemForm = document.getElementById('add-library-item-form');
+                const itemTypeSelect = document.getElementById('library-item-type');
+                const urlContainer = document.getElementById('library-url-container');
+                const fileContainer = document.getElementById('library-file-container');
+                const libraryFileInput = document.getElementById('library-file-upload');
+                const libraryFileLabel = document.getElementById('library-file-label');
+                const generateDescBtn = document.getElementById('generate-desc-btn');
+                let libraryFile = null;
+
+                itemTypeSelect.onchange = () => {
+                    urlContainer.classList.toggle('hidden', itemTypeSelect.value !== 'video');
+                    fileContainer.classList.toggle('hidden', itemTypeSelect.value === 'video');
+                };
+
+                libraryFileInput.onchange = (e) => {
+                    libraryFile = e.target.files[0];
+                    libraryFileLabel.textContent = libraryFile ? libraryFile.name : 'اختر ملف...';
+                };
+                
+                generateDescBtn.onclick = async () => {
+                    const title = document.getElementById('library-item-title').value;
+                    if (!title) {
+                        UI.showNotification('الرجاء إدخال عنوان المادة أولاً.', true);
+                        return;
+                    }
+                    const prompt = `اكتب وصفاً قصيراً وجذاباً باللغة العربية لمادة تعليمية في اللغة العربية لطلاب المرحلة الاعدادية بعنوان: "${title}"`;
+                    const desc = await callGemini(prompt, generateDescBtn);
+                    if (desc) {
+                        document.getElementById('library-item-desc').value = desc;
+                    }
+                };
+
+                addLibraryItemForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    const btn = document.getElementById('add-library-item-btn');
+                    UI.toggleButtonLoading(btn, true);
+
+                    const title = document.getElementById('library-item-title').value;
+                    const description = document.getElementById('library-item-desc').value;
+                    const type = itemTypeSelect.value;
+                    
+                    try {
+                        const data = { title, description, type, createdAt: serverTimestamp() };
+                        if (type === 'video') {
+                            data.url = document.getElementById('library-item-url').value;
+                            if (!data.url) throw new Error("الرجاء إدخال رابط الفيديو.");
+                        } else {
+                            if (!libraryFile) throw new Error("الرجاء اختيار ملف.");
+                            data.file = await uploadFile(libraryFile, `library/${Date.now()}_${libraryFile.name}`);
+                        }
+                        await addDoc(collection(db, `artifacts/${appId}/public/data/library`), data);
+                        UI.showNotification('تمت إضافة المادة للمكتبة.');
+                        addLibraryItemForm.reset();
+                        libraryFile = null;
+                        libraryFileLabel.textContent = 'اختر ملف...';
+                    } catch (error) {
+                         console.error("Error adding library item: ", error);
+                         UI.showNotification(error.message || 'حدث خطأ.', true);
+                    } finally {
+                        UI.toggleButtonLoading(btn, false);
+                    }
+                };
+                
+                const qLibrary = query(collection(db, `artifacts/${appId}/public/data/library`), orderBy('createdAt', 'desc'));
+                App.listeners.library = onSnapshot(qLibrary, (snapshot) => {
+                    libraryList.innerHTML = '';
+                    if (snapshot.empty) {
+                        libraryList.innerHTML = `<div class="col-span-full text-center py-10"><p class="text-slate-500">المكتبة فارغة حالياً.</p></div>`;
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const data = doc.data();
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg flex flex-col';
+                        const icon = data.type === 'video' ? 'youtube' : (data.type === 'pdf' ? 'file-text' : 'file');
+                        card.innerHTML = `
+                            <div class="flex-grow">
+                                <div class="flex items-center gap-2 text-amber-400"><i data-feather="${icon}" class="w-5 h-5"></i></div>
+                                <h4 class="font-bold text-white mt-2">${data.title}</h4>
+                                <p class="text-xs text-slate-400 mt-1">${data.description}</p>
+                            </div>
+                            <div class="mt-4 pt-2 border-t border-slate-700 flex justify-between items-center">
+                                <a href="${data.url || data.file.downloadURL}" target="_blank" class="text-sm text-amber-500 hover:underline">فتح</a>
+                                <button data-id="${doc.id}" class="delete-library-item-btn text-red-500 hover:text-red-400 p-1"><i data-feather="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        `;
+                        libraryList.appendChild(card);
+                    });
+                    feather.replace();
+                    libraryList.querySelectorAll('.delete-library-item-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            UI.showConfirmationModal('حذف المادة', 'هل أنت متأكد من حذف هذه المادة؟', async () => {
+                                await deleteDoc(doc(db, `artifacts/${appId}/public/data/library`, btn.dataset.id));
+                                UI.showNotification('تم حذف المادة.');
+                            });
+                        };
+                    });
+                });
+            },
+            'assignments-quizzes': () => {
+                const assignmentsTab = document.getElementById('assignments-tab');
+                const quizzesTab = document.getElementById('quizzes-tab');
+                const objectionsTab = document.getElementById('objections-tab');
+                const assignmentsContent = document.getElementById('assignments-content');
+                const quizzesContent = document.getElementById('quizzes-content');
+                const objectionsContent = document.getElementById('objections-content');
+
+                const switchTab = (activeTab) => {
+                    assignmentsTab.classList.toggle('active', activeTab === 'assignments');
+                    quizzesTab.classList.toggle('active', activeTab === 'quizzes');
+                    objectionsTab.classList.toggle('active', activeTab === 'objections');
+                    assignmentsContent.classList.toggle('hidden', activeTab !== 'assignments');
+                    quizzesContent.classList.toggle('hidden', activeTab !== 'quizzes');
+                    objectionsContent.classList.toggle('hidden', activeTab !== 'objections');
+                };
+                
+                assignmentsTab.onclick = () => switchTab('assignments');
+                quizzesTab.onclick = () => switchTab('quizzes');
+                objectionsTab.onclick = () => switchTab('objections');
+
+                switchTab('assignments'); // Default tab
+
+                // Assignments Logic
+                const assignmentsList = document.getElementById('teacher-assignments-list');
+                document.getElementById('add-assignment-btn').onclick = () => UI.showFormModal('add-assignment-modal-template', ModalSetups.setupAddAssignmentModal);
+                
+                const qAssignments = query(collection(db, `artifacts/${appId}/public/data/assignments`), orderBy('createdAt', 'desc'));
+                App.listeners.assignments = onSnapshot(qAssignments, snapshot => {
+                    assignmentsList.innerHTML = '';
+                    if (snapshot.empty) {
+                        assignmentsList.innerHTML = `<div class="text-center py-10"><p class="text-slate-500">لا توجد واجبات منشأة بعد.</p></div>`;
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const assignment = doc.data();
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg text-white">${assignment.title}</h3>
+                                    <p class="text-xs text-slate-400">تاريخ الإنشاء: ${assignment.createdAt.toDate().toLocaleDateString('ar-EG')}</p>
+                                    ${assignment.deadline ? `<p class="text-xs text-red-400">آخر موعد: ${new Date(assignment.deadline).toLocaleDateString('ar-EG')}</p>` : ''}
+                                </div>
+                                <div class="flex gap-2">
+                                    <button data-id="${doc.id}" class="view-submissions-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-lg text-sm">عرض التسليمات</button>
+                                    <button data-id="${doc.id}" class="delete-assignment-btn p-2 hover:bg-red-900/50 text-red-500 rounded-lg"><i data-feather="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        `;
+                        assignmentsList.appendChild(card);
+                    });
+                    feather.replace();
+                    assignmentsList.querySelectorAll('.delete-assignment-btn').forEach(btn => btn.onclick = () => {
+                        UI.showConfirmationModal('حذف الواجب', 'هل أنت متأكد؟ سيتم حذف كل تسليمات الطلاب المتعلقة به.', async () => {
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/assignments`, btn.dataset.id));
+                            UI.showNotification('تم حذف الواجب.');
+                        });
+                    });
+                     assignmentsList.querySelectorAll('.view-submissions-btn').forEach(btn => btn.onclick = () => {
+                        UI.navigateTo('view-assignment-submissions', { assignmentId: btn.dataset.id });
+                    });
+                });
+
+                // Quizzes Logic
+                const quizzesList = document.getElementById('teacher-quizzes-list');
+                document.getElementById('add-quiz-btn').onclick = () => UI.showFormModal('add-quiz-modal-template', ModalSetups.setupAddQuizModal);
+                 const qQuizzes = query(collection(db, `artifacts/${appId}/public/data/quizzes`), orderBy('createdAt', 'desc'));
+                App.listeners.quizzes = onSnapshot(qQuizzes, snapshot => {
+                    quizzesList.innerHTML = '';
+                    if(snapshot.empty) {
+                        quizzesList.innerHTML = `<div class="text-center py-10"><p class="text-slate-500">لا توجد اختبارات منشأة بعد.</p></div>`;
+                        return;
+                    }
+                    snapshot.forEach(doc => {
+                        const quiz = doc.data();
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg';
+                        card.innerHTML = `
+                             <div class="flex justify-between items-start">
+                                <div>
+                                    <h3 class="font-bold text-lg text-white">${quiz.title}</h3>
+                                    <p class="text-xs text-slate-400">المدة: ${quiz.timeLimit} دقيقة</p>
+                                </div>
+                                <div class="flex gap-2">
+                                    <button data-id="${doc.id}" class="view-quiz-results-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-lg text-sm">عرض النتائج</button>
+                                    <button data-id="${doc.id}" class="delete-quiz-btn p-2 hover:bg-red-900/50 text-red-500 rounded-lg"><i data-feather="trash-2" class="w-4 h-4"></i></button>
+                                </div>
+                            </div>
+                        `;
+                        quizzesList.appendChild(card);
+                    });
+                    feather.replace();
+                    quizzesList.querySelectorAll('.delete-quiz-btn').forEach(btn => btn.onclick = () => {
+                         UI.showConfirmationModal('حذف الاختبار', 'هل أنت متأكد؟ سيتم حذف كل نتائج الطلاب المتعلقة به.', async () => {
+                            await deleteDoc(doc(db, `artifacts/${appId}/public/data/quizzes`, btn.dataset.id));
+                            UI.showNotification('تم حذف الاختبار.');
+                        });
+                    });
+                    quizzesList.querySelectorAll('.view-quiz-results-btn').forEach(btn => btn.onclick = () => {
+                        UI.navigateTo('view-quiz-results', { quizId: btn.dataset.id });
+                    });
+                });
+                
+                // Objections Logic
+                const objectionsList = document.getElementById('objections-list');
+                const qObjections = query(collection(db, `artifacts/${appId}/public/data/submissions`), where('status', '==', 'objected'));
+                App.listeners.objections = onSnapshot(qObjections, async (snapshot) => {
+                    objectionsList.innerHTML = '';
+                    if(snapshot.empty) {
+                        objectionsList.innerHTML = `<div class="text-center py-10"><p class="text-slate-500">لا توجد اعتراضات حالياً.</p></div>`;
+                        return;
+                    }
+                    for (const subDoc of snapshot.docs) {
+                        const submission = subDoc.data();
+                        const studentDoc = await getDoc(doc(db, `artifacts/${appId}/students`, submission.studentId));
+                        const assignmentDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/assignments`, submission.assignmentId));
+                        if (!studentDoc.exists() || !assignmentDoc.exists()) continue;
+
+                        const student = studentDoc.data();
+                        const assignment = assignmentDoc.data();
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg';
+                        card.innerHTML = `
+                            <div class="flex justify-between items-center">
+                                <div>
+                                    <p class="font-bold text-white">${student.name}</p>
+                                    <p class="text-sm text-slate-400">يعترض على درجة واجب: ${assignment.title}</p>
+                                </div>
+                                <button data-id="${subDoc.id}" class="review-objection-btn bg-red-600 hover:bg-red-700 text-white font-bold py-2 px-3 rounded-lg text-sm">مراجعة الاعتراض</button>
+                            </div>
+                        `;
+                        objectionsList.appendChild(card);
+                    }
+                    objectionsList.querySelectorAll('.review-objection-btn').forEach(btn => btn.onclick = () => {
+                         UI.showFormModal('grade-submission-modal-template', ModalSetups.setupGradeSubmissionModal, { submissionId: btn.dataset.id });
+                    });
+                });
+            },
+            'students': () => {
+                const listContainer = document.getElementById('teacher-students-list');
+                const searchInput = document.getElementById('student-search-input');
+                const instituteFilter = document.getElementById('filter-institute');
+                const genderFilter = document.getElementById('filter-gender');
+                let allStudents = [];
+
+                // Populate institute filter
+                Object.keys(App.institutes).forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = App.institutes[key];
+                    instituteFilter.appendChild(option);
+                });
+
+                document.getElementById('add-student-btn').onclick = () => UI.showFormModal('add-student-modal-template', ModalSetups.setupAddStudentModal);
+
+                const renderStudents = () => {
+                    const searchTerm = searchInput.value.toLowerCase().trim();
+                    const selectedInstitute = instituteFilter.value;
+                    const selectedGender = genderFilter.value;
+
+                    const filteredStudents = allStudents.filter(student => {
+                        const searchMatch = student.name.toLowerCase().includes(searchTerm) || (student.loginCode && student.loginCode.toLowerCase().includes(searchTerm));
+                        const instituteMatch = selectedInstitute === 'all' || student.institute === selectedInstitute;
+                        const genderMatch = selectedGender === 'all' || student.gender === selectedGender;
+                        return searchMatch && instituteMatch && genderMatch;
+                    });
+
+                    listContainer.innerHTML = '';
+                    if (filteredStudents.length === 0) {
+                        listContainer.innerHTML = `<div class="text-center p-6"><p class="text-slate-500">لا يوجد طلاب مطابقون للبحث.</p></div>`;
+                        return;
+                    }
+                    filteredStudents.forEach(student => {
+                        const studentRow = document.createElement('div');
+                        studentRow.className = 'p-4 flex flex-col md:flex-row justify-between items-start md:items-center gap-4 hover:bg-slate-800/50 transition-colors';
+                        studentRow.innerHTML = `
+                            <div class="flex-1 flex items-center gap-4 cursor-pointer" data-student-id="${student.id}">
+                                <img src="${student.avatarURL || `https://i.pravatar.cc/150?u=${student.id}`}" class="w-10 h-10 rounded-full object-cover bg-slate-700">
+                                <div>
+                                    <p class="font-bold text-white">${student.name}</p>
+                                    <p class="text-sm text-slate-400">${App.institutes[student.institute] || 'غير محدد'}</p>
+                                </div>
+                            </div>
+                            <div class="flex-1">
+                                <p class="text-sm text-slate-500 font-mono">${student.loginCode || 'N/A'}</p>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <span class="text-sm text-slate-400">${student.gender === 'male' ? 'ذكر' : 'أنثى'}</span>
+                            </div>
+                            <div class="flex items-center gap-2">
+                                <input type="number" placeholder="أضف نقاط" class="points-input bg-slate-700 border border-slate-600 text-white text-sm rounded-lg w-24 p-2 text-center" data-studentid="${student.id}">
+                                <button class="add-points-btn bg-amber-600 hover:bg-amber-700 text-white font-bold py-2 px-4 rounded-lg" data-studentid="${student.id}">منح</button>
+                                <button data-id="${student.id}" data-name="${student.name}" class="delete-student-btn p-2 hover:bg-red-900/50 text-red-500 hover:text-red-400 rounded-lg"><i data-feather="trash-2" class="w-4 h-4"></i></button>
+                            </div>
+                        `;
+                        listContainer.appendChild(studentRow);
+                    });
+                    feather.replace();
+
+                    listContainer.querySelectorAll('.cursor-pointer').forEach(row => {
+                        row.onclick = () => UI.navigateTo('view-student-profile', { studentId: row.dataset.studentId });
+                    });
+                    listContainer.querySelectorAll('.delete-student-btn').forEach(btn => {
+                        btn.onclick = (e) => {
+                            e.stopPropagation(); // Prevent row click
+                            const studentId = btn.dataset.id;
+                            const studentName = btn.dataset.name;
+                            UI.showConfirmationModal('حذف الطالب', `هل أنت متأكد من حذف الطالب "${studentName}"؟ سيتم حذف جميع بياناته.`, async () => {
+                                await deleteDoc(doc(db, `artifacts/${appId}/students`, studentId));
+                                UI.showNotification('تم حذف الطالب بنجاح.');
+                            });
+                        }
+                    })
+                    listContainer.querySelectorAll('.add-points-btn').forEach(button => {
+                        button.onclick = async (e) => {
+                            e.stopPropagation();
+                            const studentId = e.currentTarget.dataset.studentid;
+                            const input = document.querySelector(`.points-input[data-studentid="${studentId}"]`);
+                            const pointsToAdd = parseInt(input.value);
+
+                            if (isNaN(pointsToAdd) || pointsToAdd === 0) {
+                                UI.showNotification('الرجاء إدخال عدد صحيح من النقاط.', true);
+                                return;
+                            }
+
+                            try {
+                                const studentRef = doc(db, `artifacts/${appId}/students`, studentId);
+                                await updateDoc(studentRef, {
+                                    points: increment(pointsToAdd),
+                                    spendablePoints: increment(pointsToAdd)
+                                });
+                                UI.showNotification(`تمت إضافة ${pointsToAdd} نقطة بنجاح!`, false);
+                                input.value = '';
+                            } catch (error) {
+                                console.error("Error adding points:", error);
+                                UI.showNotification('حدث خطأ أثناء إضافة النقاط.', true);
+                            }
+                        };
+                    });
+                };
+
+                searchInput.addEventListener('keyup', renderStudents);
+                instituteFilter.addEventListener('change', renderStudents);
+                genderFilter.addEventListener('change', renderStudents);
+
+                const q = query(collection(db, `artifacts/${appId}/students`), orderBy("name"));
+                App.listeners.studentsList = onSnapshot(q, (snapshot) => {
+                    if (snapshot.empty) {
+                        listContainer.innerHTML = `<div class="text-center p-6"><p class="text-slate-500">لم يتم إضافة أي طلاب بعد.</p></div>`;
+                        return;
+                    }
+                    allStudents = snapshot.docs.map(doc => ({id: doc.id, ...doc.data()}));
+                    renderStudents();
+                });
+            },
+            'leaderboard': () => {
+                const listContainer = document.getElementById('leaderboard-list');
+                const q = query(collection(db, `artifacts/${appId}/students`), orderBy("points", "desc"), limit(50));
+                
+                App.listeners.leaderboard = onSnapshot(q, (snapshot) => {
+                    listContainer.innerHTML = '';
+                    if (snapshot.empty) {
+                         listContainer.innerHTML = `<div class="text-center p-6"><p class="text-slate-500">لا يوجد طلاب لعرضهم.</p></div>`;
+                         return;
+                    }
+                    snapshot.docs.forEach((doc, index) => {
+                        const student = doc.data();
+                        const rank = index + 1;
+                        const row = document.createElement('div');
+                        row.className = 'p-4 flex items-center gap-4';
+                        if (rank <= 3) row.classList.add('bg-amber-900/30');
+                        row.innerHTML = `
+                            <div class="text-2xl font-bold w-10 text-center ${rank <= 3 ? 'text-amber-400' : 'text-slate-500'}">${rank}</div>
+                            <img src="${student.avatarURL}" class="w-10 h-10 rounded-full object-cover">
+                            <div class="flex-grow">
+                                <p class="font-bold text-white">${student.name}</p>
+                                <p class="text-sm text-slate-400">${App.institutes[student.institute]}</p>
+                            </div>
+                            <div class="text-lg font-bold text-amber-400">${student.points || 0} نقطة</div>
+                        `;
+                        listContainer.appendChild(row);
+                    });
+                });
+            },
+            'questions': () => {
+                const listContainer = document.getElementById('teacher-questions-list');
+                const q = query(collection(db, `artifacts/${appId}/public/data/questions`), orderBy('createdAt', 'desc'));
+
+                App.listeners.questions = onSnapshot(q, async (snapshot) => {
+                    listContainer.innerHTML = '';
+                    if (snapshot.empty) {
+                        listContainer.innerHTML = `<div class="text-center py-10"><p class="text-slate-500">لا توجد أسئلة من الطلاب بعد.</p></div>`;
+                        return;
+                    }
+
+                    const questionsDocs = snapshot.docs;
+                    
+                    // Sort client-side to show unanswered questions first
+                    questionsDocs.sort((a, b) => {
+                        const dataA = a.data();
+                        const dataB = b.data();
+                        if (dataA.answered !== dataB.answered) {
+                            return dataA.answered ? 1 : -1; // unanswered (false) comes first
+                        }
+                        return 0; // Keep original chronological order for items with the same 'answered' status
+                    });
+
+
+                    for (const docSnap of questionsDocs) {
+                        const question = docSnap.data();
+                        const studentDoc = await getDoc(doc(db, `artifacts/${appId}/students`, question.studentId));
+                        if (!studentDoc.exists()) continue;
+                        const student = studentDoc.data();
+
+                        const card = document.createElement('div');
+                        card.className = `glass-card p-4 rounded-lg ${question.answered ? 'opacity-60' : ''}`;
+                        
+                        let content = `
+                            <div class="flex justify-between items-start">
+                                <div class="flex items-start gap-3 flex-grow">
+                                    <img src="${student.avatarURL}" class="w-10 h-10 rounded-full object-cover">
+                                    <div>
+                                        <p class="font-bold text-white">${student.name}</p>
+                                        <p class="text-sm text-slate-300 whitespace-pre-wrap">${question.text}</p>
+                                        <p class="text-xs text-slate-500 mt-1">${question.createdAt.toDate().toLocaleString('ar-EG')}</p>
+                                    </div>
+                                </div>
+                                <button data-id="${docSnap.id}" class="delete-question-btn p-1 text-red-500 hover:text-red-400"><i data-feather="x" class="w-4 h-4"></i></button>
+                            </div>
+                        `;
+
+                        if (question.answered) {
+                            content += `
+                                <div class="mt-3 pt-3 border-t border-slate-700">
+                                    <p class="font-bold text-amber-400 text-sm">إجابتك:</p>
+                                    <p class="text-white whitespace-pre-wrap">${question.answer}</p>
+                                    <p class="text-xs text-slate-500 mt-1">تمت الإجابة في: ${question.answeredAt.toDate().toLocaleString('ar-EG')}</p>
+                                </div>
+                            `;
+                        } else {
+                            content += `
+                                <form class="answer-form mt-3 space-y-2" data-id="${docSnap.id}">
+                                    <textarea class="w-full bg-slate-700 border border-slate-600 rounded-lg p-2 text-sm custom-scrollbar" rows="3" placeholder="اكتب إجابتك هنا..." required></textarea>
+                                    <button type="submit" class="bg-amber-600 hover:bg-amber-700 text-white font-bold py-1 px-3 rounded-lg text-sm">إرسال الإجابة</button>
+                                </form>
+                            `;
+                        }
+                        card.innerHTML = content;
+                        listContainer.appendChild(card);
+                    }
+                    feather.replace();
+
+                    listContainer.querySelectorAll('.answer-form').forEach(form => {
+                        form.onsubmit = async (e) => {
+                            e.preventDefault();
+                            const answer = form.querySelector('textarea').value;
+                            const questionId = form.dataset.id;
+                            await updateDoc(doc(db, `artifacts/${appId}/public/data/questions`, questionId), {
+                                answer: answer,
+                                answered: true,
+                                answeredAt: serverTimestamp()
+                            });
+                            UI.showNotification('تم إرسال الإجابة.');
+                        };
+                    });
+                     listContainer.querySelectorAll('.delete-question-btn').forEach(btn => {
+                        btn.onclick = () => {
+                            UI.showConfirmationModal('حذف السؤال', 'هل أنت متأكد من حذف هذا السؤال؟', async () => {
+                                await deleteDoc(doc(db, `artifacts/${appId}/public/data/questions`, btn.dataset.id));
+                                UI.showNotification('تم حذف السؤال.');
+                            });
+                        };
+                    });
+                });
+            },
+            'view-student-profile': () => {
+                 // This is a placeholder for now
+            },
+            'view-assignment-submissions': async (data) => {
+                const { assignmentId } = data;
+                const container = document.getElementById('submissions-list-container');
+                const titleEl = document.getElementById('view-submissions-title');
+                document.getElementById('back-to-assignments-list-btn').onclick = () => UI.navigateTo('assignments-quizzes');
+
+                const assignmentDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/assignments`, assignmentId));
+                if (!assignmentDoc.exists()) {
+                    titleEl.textContent = 'لم يتم العثور على الواجب';
+                    container.innerHTML = `<p class="text-center text-slate-500">قد يكون الواجب قد تم حذفه.</p>`;
+                    return;
+                }
+                titleEl.textContent = assignmentDoc.data().title;
+                
+                const q = query(collection(db, `artifacts/${appId}/public/data/submissions`), where('assignmentId', '==', assignmentId));
+                App.listeners.submissions = onSnapshot(q, async (snapshot) => {
+                    container.innerHTML = '';
+                    if (snapshot.empty) {
+                        container.innerHTML = `<p class="text-center text-slate-500">لا توجد تسليمات لهذا الواجب بعد.</p>`;
+                        return;
+                    }
+                    for (const subDoc of snapshot.docs) {
+                        const submission = subDoc.data();
+                        const studentDoc = await getDoc(doc(db, `artifacts/${appId}/students`, submission.studentId));
+                        if (!studentDoc.exists()) continue;
+                        const student = studentDoc.data();
+                        
+                        const statusMap = {
+                            submitted: { text: 'بانتظار التصحيح', color: 'text-amber-400', button: 'تصحيح' },
+                            graded: { text: `تم التصحيح: ${submission.score}/100`, color: 'text-green-400', button: 'عرض' },
+                            objected: { text: 'معترض', color: 'text-red-400', button: 'مراجعة' }
+                        };
+                        const currentStatus = statusMap[submission.status] || { text: 'غير معروف', color: '', button: 'عرض' };
+
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg flex justify-between items-center';
+                        card.innerHTML = `
+                            <div class="flex items-center gap-3">
+                                <img src="${student.avatarURL}" class="w-10 h-10 rounded-full object-cover">
+                                <div>
+                                    <p class="font-bold text-white">${student.name}</p>
+                                    <p class="text-xs ${currentStatus.color}">${currentStatus.text}</p>
+                                </div>
+                            </div>
+                            <button data-id="${subDoc.id}" class="grade-submission-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-lg text-sm">${currentStatus.button}</button>
+                        `;
+                        container.appendChild(card);
+                    }
+                    container.querySelectorAll('.grade-submission-btn').forEach(btn => {
+                        btn.onclick = () => UI.showFormModal('grade-submission-modal-template', ModalSetups.setupGradeSubmissionModal, { submissionId: btn.dataset.id });
+                    });
+                });
+            },
+            'view-quiz-results': async (data) => {
+                 const { quizId } = data;
+                const container = document.getElementById('quiz-results-list-container');
+                const titleEl = document.getElementById('view-results-title');
+                document.getElementById('back-to-quizzes-list-btn').onclick = () => UI.navigateTo('assignments-quizzes');
+
+                const quizDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/quizzes`, quizId));
+                if (!quizDoc.exists()) {
+                    titleEl.textContent = 'لم يتم العثور على الاختبار';
+                    container.innerHTML = `<p class="text-center text-slate-500">قد يكون الاختبار قد تم حذفه.</p>`;
+                    return;
+                }
+                titleEl.textContent = `نتائج: ${quizDoc.data().title}`;
+
+                const q = query(collection(db, `artifacts/${appId}/public/data/quizSubmissions`), where('quizId', '==', quizId));
+                App.listeners.quizResults = onSnapshot(q, async (snapshot) => {
+                    container.innerHTML = '';
+                    if (snapshot.empty) {
+                        container.innerHTML = `<p class="text-center text-slate-500">لم يقم أي طالب بإنهاء هذا الاختبار بعد.</p>`;
+                        return;
+                    }
+                     for (const subDoc of snapshot.docs) {
+                        const submission = subDoc.data();
+                        const studentDoc = await getDoc(doc(db, `artifacts/${appId}/students`, submission.studentId));
+                        if (!studentDoc.exists()) continue;
+                        const student = studentDoc.data();
+                        
+                        const card = document.createElement('div');
+                        card.className = 'glass-card p-4 rounded-lg flex justify-between items-center';
+                        card.innerHTML = `
+                             <div class="flex items-center gap-3">
+                                <img src="${student.avatarURL}" class="w-10 h-10 rounded-full object-cover">
+                                <div>
+                                    <p class="font-bold text-white">${student.name}</p>
+                                    <p class="text-sm text-slate-400">النتيجة: <span class="font-bold text-amber-400">${submission.score || 0}/100</span></p>
+                                </div>
+                            </div>
+                            <button data-id="${subDoc.id}" class="review-quiz-btn bg-slate-700 hover:bg-slate-600 text-white font-bold py-2 px-3 rounded-lg text-sm">مراجعة الإجابات</button>
+                        `;
+                        container.appendChild(card);
+                    }
+                    container.querySelectorAll('.review-quiz-btn').forEach(btn => {
+                        btn.onclick = () => UI.showFormModal('teacher-review-quiz-submission-template', ModalSetups.setupReviewQuizSubmissionModal, { submissionId: btn.dataset.id });
+                    });
+                });
+            }
+        };
+
+        // --- Auth State Change Handler ---
+        onAuthStateChanged(auth, (user) => {
+            setTimeout(async () => {
+                try {
+                    if (user) {
+                        await UI.setupTeacherDashboard(user);
+                    } else {
+                        App.currentUser = null;
+                        UI.renderView('login');
+                    }
+                } catch (error) {
+                    console.error("Fatal Authentication Error:", error);
+                    UI.showNotification("حدث خطأ حرج في المصادقة.", true);
+                    if (auth.currentUser) await signOut(auth);
+                    UI.renderView('login');
+                }
+            }, 50);
+        });
+        
+        // --- Starry Background ---
+        function createStars() {
+            const container = document.getElementById('stars-container');
+            if (!container) return;
+            container.innerHTML = ''; // Clear existing stars
+            for (let i = 0; i < 100; i++) {
+                const star = document.createElement('div');
+                star.className = 'star';
+                const size = Math.random() * 2 + 1;
+                star.style.width = `${size}px`;
+                star.style.height = `${size}px`;
+                star.style.top = `${Math.random() * 100}%`;
+                star.style.left = `${Math.random() * 100}%`;
+                const duration = Math.random() * 2 + 2;
+                star.style.animationDuration = `${duration}s`;
+                star.style.animationDelay = `${Math.random() * duration}s`;
+                container.appendChild(star);
+            }
+        }
+
+        // --- Modal Setup Functions ---
+        const ModalSetups = {
+            setupAddStudentModal: (modalContent) => {
+                const form = modalContent.querySelector('#add-student-form');
+                const saveBtn = modalContent.querySelector('#save-student-btn');
+                const instituteSelect = modalContent.querySelector('#student-institute');
+
+                // Populate institutes
+                instituteSelect.innerHTML = '';
+                Object.keys(App.institutes).forEach(key => {
+                    const option = document.createElement('option');
+                    option.value = key;
+                    option.textContent = App.institutes[key];
+                    instituteSelect.appendChild(option);
+                });
+
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    UI.toggleButtonLoading(saveBtn, true);
+
+                    const studentName = modalContent.querySelector('#student-name').value.trim();
+                    const institute = instituteSelect.value;
+                    const gender = modalContent.querySelector('#student-gender').value;
+
+                    if (!studentName || !institute || !gender) {
+                        UI.showNotification('الرجاء تعبئة جميع الحقول.', true);
+                        UI.toggleButtonLoading(saveBtn, false);
+                        return;
+                    }
+
+                    try {
+                        // Generate a unique 6-digit login code
+                        const loginCode = Math.floor(100000 + Math.random() * 900000).toString();
+
+                        await addDoc(collection(db, `artifacts/${appId}/students`), {
+                            name: studentName,
+                            institute: institute,
+                            gender: gender,
+                            loginCode: loginCode,
+                            points: 0,
+                            spendablePoints: 0,
+                            createdAt: serverTimestamp(),
+                            avatarURL: `https://i.pravatar.cc/150?u=${loginCode}`
+                        });
+
+                        UI.showNotification('تم إضافة الطالب بنجاح.');
+                        UI.hideFormModal();
+                    } catch (error) {
+                        console.error("Error adding student:", error);
+                        UI.showNotification('حدث خطأ أثناء إضافة الطالب.', true);
+                    } finally {
+                        UI.toggleButtonLoading(saveBtn, false);
+                    }
+                };
+            },
+            setupAddAssignmentModal: (modalContent, assignmentData = null) => {
+                // Implementation for adding/editing assignments
+            },
+            setupAddQuizModal: (modalContent, quizData = null) => {
+                // Implementation for adding/editing quizzes
+            },
+            setupGradeSubmissionModal: (modalContent, data) => {
+                const { submissionId } = data;
+                const studentNameEl = modalContent.querySelector('#grade-student-name');
+                const submissionDateEl = modalContent.querySelector('#grade-submission-date');
+                const answersContainer = modalContent.querySelector('#submission-answers-container');
+                const gradingForm = modalContent.querySelector('#grading-form');
+                const saveBtn = modalContent.querySelector('#save-grade-btn');
+                const objectionContainer = modalContent.querySelector('#objection-reason-container');
+                const objectionText = modalContent.querySelector('#objection-reason-text');
+
+                const loadSubmission = async () => {
+                    const subDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/submissions`, submissionId));
+                    if (!subDoc.exists()) { UI.hideFormModal(); UI.showNotification('لم يتم العثور على التسليم.', true); return; }
+                    
+                    const submission = subDoc.data();
+                    const studentDoc = await getDoc(doc(db, `artifacts/${appId}/students`, submission.studentId));
+                    const assignmentDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/assignments`, submission.assignmentId));
+
+                    if (!studentDoc.exists() || !assignmentDoc.exists()) { UI.hideFormModal(); UI.showNotification('بيانات الطالب أو الواجب غير موجودة.', true); return; }
+
+                    studentNameEl.textContent = studentDoc.data().name;
+                    submissionDateEl.textContent = submission.submittedAt.toDate().toLocaleString('ar-EG');
+                    
+                    if (submission.status === 'objected') {
+                        objectionContainer.classList.remove('hidden');
+                        objectionText.textContent = submission.objectionReason || 'لا يوجد سبب مذكور.';
+                    }
+
+                    const assignment = assignmentDoc.data();
+                    answersContainer.innerHTML = '';
+                    assignment.questions.forEach((q, index) => {
+                        const answer = submission.answers[index];
+                        const answerDiv = document.createElement('div');
+                        answerDiv.innerHTML = `
+                            <p class="font-bold text-slate-300">${index + 1}. ${q.text}</p>
+                            <div class="mt-2 p-3 bg-slate-700 rounded-lg text-white whitespace-pre-wrap">${answer ? answer.text : 'لم تتم الإجابة'}</div>
+                        `;
+                        answersContainer.appendChild(answerDiv);
+                    });
+
+                    modalContent.querySelector('#grade-score').value = submission.score || '';
+                    modalContent.querySelector('#grade-feedback').value = submission.feedback || '';
+                };
+
+                gradingForm.onsubmit = async (e) => {
+                    e.preventDefault();
+                    UI.toggleButtonLoading(saveBtn, true);
+                    const score = parseInt(modalContent.querySelector('#grade-score').value);
+                    const feedback = modalContent.querySelector('#grade-feedback').value;
+
+                    try {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/submissions`, submissionId), {
+                            score,
+                            feedback,
+                            status: 'graded',
+                            gradedAt: serverTimestamp()
+                        });
+                        UI.showNotification('تم حفظ التصحيح.');
+                        UI.hideFormModal();
+                    } catch (error) {
+                        console.error("Error saving grade:", error);
+                        UI.showNotification('خطأ في حفظ التصحيح.', true);
+                    } finally {
+                        UI.toggleButtonLoading(saveBtn, false);
+                    }
+                };
+
+                loadSubmission();
+            },
+            setupReviewQuizSubmissionModal: (modalContent, data) => {
+                const { submissionId } = data;
+                const studentNameEl = modalContent.querySelector('#review-quiz-student-name');
+                const form = modalContent.querySelector('#review-quiz-form');
+                const finalScoreEl = modalContent.querySelector('#review-quiz-final-score');
+                const saveBtn = modalContent.querySelector('#save-quiz-grade-btn');
+
+                let quiz, submission;
+
+                const recalculateScore = () => {
+                    let totalScore = 0;
+                    const totalPossiblePoints = quiz.questions.reduce((sum, q) => sum + (q.points || 10), 0);
+                    
+                    quiz.questions.forEach((q, index) => {
+                        const studentAnswer = submission.answers[index];
+                        if (!studentAnswer) return;
+
+                        if (q.type === 'essay') {
+                            const pointsInput = form.querySelector(`input[data-question-index="${index}"]`);
+                            totalScore += parseInt(pointsInput.value) || 0;
+                        } else if (studentAnswer.isCorrect) {
+                            totalScore += q.points || 10;
+                        }
+                    });
+                    
+                    const finalPercentage = totalPossiblePoints > 0 ? Math.round((totalScore / totalPossiblePoints) * 100) : 0;
+                    finalScoreEl.textContent = `${finalPercentage}/100`;
+                    return finalPercentage;
+                };
+
+                const loadData = async () => {
+                    const subDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/quizSubmissions`, submissionId));
+                    if (!subDoc.exists()) { UI.hideFormModal(); return; }
+                    submission = subDoc.data();
+
+                    const quizDoc = await getDoc(doc(db, `artifacts/${appId}/public/data/quizzes`, submission.quizId));
+                    if (!quizDoc.exists()) { UI.hideFormModal(); return; }
+                    quiz = quizDoc.data();
+
+                    const studentDoc = await getDoc(doc(db, `artifacts/${appId}/students`, submission.studentId));
+                    studentNameEl.textContent = studentDoc.exists() ? studentDoc.data().name : 'طالب غير معروف';
+
+                    form.innerHTML = '';
+                    quiz.questions.forEach((q, index) => {
+                        const studentAnswer = submission.answers[index];
+                        const isCorrect = studentAnswer?.isCorrect || false;
+                        const questionDiv = document.createElement('div');
+                        questionDiv.className = `p-4 rounded-lg ${isCorrect ? 'bg-green-900/30' : 'bg-red-900/30'}`;
+                        
+                        const answerText = (typeof studentAnswer === 'object' && studentAnswer !== null && studentAnswer.text !== undefined) ? studentAnswer.text : (studentAnswer || 'لا توجد إجابة');
+                        let answerHtml = `<p class="mt-2 text-slate-300">إجابة الطالب: <span class="font-bold text-white">${answerText}</span></p>`;
+
+                        if (!isCorrect && q.type !== 'essay') {
+                            answerHtml += `<p class="mt-1 text-xs text-green-400">الإجابة الصحيحة: ${q.correctAnswer}</p>`;
+                        }
+                        
+                        let pointsHtml = `<div class="text-sm font-bold ${isCorrect ? 'text-green-400' : 'text-red-400'}">${isCorrect ? `+${q.points || 10}` : '+0'} نقاط</div>`;
+                        if (q.type === 'essay') {
+                            pointsHtml = `
+                                <div class="mt-2">
+                                    <label class="text-xs text-slate-400">نقاط السؤال (من ${q.points || 10})</label>
+                                    <input type="number" value="${studentAnswer?.points || 0}" data-question-index="${index}" class="essay-points-input bg-slate-800 border border-slate-600 rounded-md p-1 w-20 text-center">
+                                </div>
+                            `;
+                        }
+
+                        questionDiv.innerHTML = `
+                            <div class="flex justify-between items-start">
+                                <p class="flex-grow font-bold text-slate-200">${index + 1}. ${q.text}</p>
+                                ${pointsHtml}
+                            </div>
+                            ${answerHtml}
+                        `;
+                        form.appendChild(questionDiv);
+                    });
+                    
+                    form.querySelectorAll('.essay-points-input').forEach(input => {
+                        input.oninput = recalculateScore;
+                    });
+                    
+                    recalculateScore();
+                };
+
+                form.onsubmit = async (e) => {
+                    e.preventDefault();
+                    UI.toggleButtonLoading(saveBtn, true);
+                    const finalScore = recalculateScore();
+                    try {
+                        await updateDoc(doc(db, `artifacts/${appId}/public/data/quizSubmissions`, submissionId), {
+                            score: finalScore,
+                            status: 'graded'
+                        });
+                        UI.showNotification('تم حفظ التصحيح النهائي.');
+                        UI.hideFormModal();
+                    } catch(error) {
+                        console.error("Error saving final grade:", error);
+                        UI.showNotification('خطأ في حفظ النتيجة.', true);
+                    } finally {
+                        UI.toggleButtonLoading(saveBtn, false);
+                    }
+                };
+
+                loadData();
+            }
+        };
+
+        // --- Initial Load ---
+        UI.renderView('loading');
+        UI.setupLoginView();
+        createStars();
+
+    </script>
+</body>
+</html>
